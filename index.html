@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Diary">
+<meta name="theme-color" content="#12051c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>Diary</title>
+<style>
+:root{
+  --pink:#ffb6e6; --lav:#c9a0ff; --ink:#12051c; --rad:47px;
+  --panel:rgba(26,9,46,.80); --line:rgba(255,182,230,.28); --txt:#f3e9ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#0b0314}
+body{font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;color:var(--txt);
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+button{font:inherit;color:inherit;background:none;border:0;touch-action:manipulation}
+
+/* ---------- the screen ---------- */
+.app{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(100vw,calc(100dvh*390/844));height:100dvh;overflow:hidden;border-radius:var(--rad);
+  background:var(--ink);isolation:isolate;--u:1px;--kb:0px;--io:.85;--dim:.15;--feather:14}
+@media (max-width:500px){.app{left:0;top:0;transform:none;width:100%;height:100%;border-radius:0}}
+
+.nebula{position:absolute;inset:0;z-index:0;
+  background:
+    radial-gradient(60% 40% at 25% 20%,rgba(255,120,200,.36),transparent 70%),
+    radial-gradient(55% 45% at 80% 35%,rgba(150,90,255,.40),transparent 70%),
+    radial-gradient(70% 50% at 40% 85%,rgba(200,70,160,.32),transparent 70%),
+    radial-gradient(circle at 50% 50%,#3a1460 0%,#200a3a 55%,#0f0420 100%);
+  background-size:150% 150%;animation:neb 60s ease-in-out infinite alternate}
+@keyframes neb{from{background-position:0% 0%}to{background-position:100% 100%}}
+.flow{position:absolute;inset:-12%;z-index:1;pointer-events:none;
+  background:radial-gradient(closest-side,transparent 52%,rgba(255,140,220,.26) 84%,rgba(201,160,255,.34) 100%);
+  animation:flow 11s ease-in-out infinite}
+@keyframes flow{0%{transform:scale(1.16);opacity:0}35%{opacity:1}100%{transform:scale(.93);opacity:0}}
+.app.noflow .flow{display:none}
+@media (prefers-reduced-motion:reduce){.nebula,.flow{animation:none}}
+canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#stars{z-index:1}
+#fx{z-index:3}
+
+/* ---------- collage grid ---------- */
+.grid{position:absolute;inset:0;z-index:2;pointer-events:none}
+.app.collage .grid{pointer-events:auto}
+.tile{position:absolute;overflow:hidden}
+.app.collage .tile{touch-action:none}
+.tile .im{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:var(--io);
+  transform-origin:50% 50%;pointer-events:none;-webkit-user-drag:none}
+.tile.has::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:rgba(14,4,28,var(--dim))}
+.tile.has::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  box-shadow:inset 0 0 calc(var(--feather)*1px) calc(var(--feather)*.35px) rgba(18,5,32,.95)}
+.tile .ring{position:absolute;inset:3px;z-index:5;border-radius:10px;pointer-events:none;display:none;
+  border:1px dashed rgba(255,182,230,.5)}
+.app.collage .tile .ring{display:block}
+.app.collage .tile.sel .ring{border:2px solid var(--pink);box-shadow:0 0 14px rgba(255,182,230,.6),inset 0 0 14px rgba(255,182,230,.25)}
+.app.collage .tile:not(.has)::after{content:"＋";position:absolute;inset:0;z-index:2;display:grid;place-items:center;
+  font-size:28px;color:rgba(255,182,230,.65);pointer-events:none}
+
+/* ---------- freeform text ---------- */
+.texts{position:absolute;inset:0;z-index:4;pointer-events:none}
+.app.collage .texts{opacity:.45;pointer-events:none}
+.app.collage .block{pointer-events:none}
+.block{position:absolute;pointer-events:auto;touch-action:none}
+.block.editing{touch-action:auto}
+.txt{outline:none;white-space:pre-wrap;overflow-wrap:anywhere;min-height:1.3em;
+  padding:calc(6*var(--u)) calc(8*var(--u));border-radius:calc(10*var(--u));caret-color:var(--pink);
+  -webkit-user-select:none;user-select:none}
+.txt:empty::before{content:attr(data-ph);opacity:.4}
+.block.editing .txt{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.block.sel .txt{box-shadow:0 0 0 1px rgba(255,182,230,.55);background:rgba(20,6,38,.18)}
+.block.glow .txt{text-shadow:0 0 calc(2*var(--u)) var(--gc),0 0 calc(8*var(--u)) #ffb6e6,0 0 calc(18*var(--u)) #c9a0ff}
+.hd{position:absolute;display:none;width:34px;height:34px;border-radius:50%;place-items:center;z-index:3;
+  background:rgba(40,14,66,.92);border:1px solid var(--pink);color:#fff;font-size:16px;line-height:1}
+.block.sel .hd{display:grid}
+.h-move{left:-17px;top:-17px}.h-del{right:-17px;top:-17px}.h-size{right:-17px;bottom:-17px}
+
+/* ---------- frame ---------- */
+.frame{position:absolute;inset:0;z-index:40;border-radius:var(--rad);pointer-events:none;padding:4px;
+  background:linear-gradient(135deg,#ffb6e6,#c9a0ff 50%,#ffb6e6);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  filter:drop-shadow(0 0 5px rgba(255,182,230,.8))}
+.frame-glow{position:absolute;inset:0;z-index:39;border-radius:var(--rad);pointer-events:none;
+  box-shadow:inset 0 0 34px 6px rgba(255,150,225,.34),inset 0 0 90px rgba(201,160,255,.16)}
+
+/* ---------- dock + sheets ---------- */
+.dock{position:absolute;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:2px;padding:5px;
+  bottom:calc(var(--kb) + max(env(safe-area-inset-bottom),12px) + 4px);
+  border-radius:28px;background:var(--panel);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 0 22px rgba(201,160,255,.22)}
+.dock button{min-width:46px;height:42px;padding:0 8px;border-radius:21px;font-size:18px;white-space:nowrap}
+.dock button.on{background:rgba(255,182,230,.22);box-shadow:inset 0 0 0 1px var(--line)}
+.dock [data-act=done]{display:none;color:var(--pink)}
+.dock.editing [data-act=done]{display:block}
+.fab{position:absolute;left:50%;transform:translateX(-50%);z-index:50;width:38px;height:38px;border-radius:50%;
+  bottom:calc(var(--kb) + max(env(safe-area-inset-bottom),12px) + 4px);font-size:16px;
+  background:var(--panel);border:1px solid var(--line);opacity:.65}
+
+.sheet{position:absolute;left:10px;right:10px;z-index:45;max-height:44%;overflow:auto;
+  bottom:calc(var(--kb) + max(env(safe-area-inset-bottom),12px) + 62px);
+  padding:6px 14px 14px;border-radius:24px;background:var(--panel);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 26px rgba(201,160,255,.22)}
+.sheet.min .pane{display:none}
+.grab{width:44px;height:5px;border-radius:3px;background:rgba(255,182,230,.4);margin:2px auto 8px;cursor:pointer}
+.row{display:flex;align-items:center;gap:10px;margin:8px 0}
+.lbl{width:46px;font-size:12px;opacity:.7;flex:none}
+.row output{width:30px;font-size:12px;opacity:.7;text-align:right;flex:none}
+input[type=range]{flex:1;min-width:0;accent-color:var(--pink);height:28px}
+.chips,.tabs{overflow-x:auto;gap:6px;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar,.tabs::-webkit-scrollbar{display:none}
+.chip,.tab,.kb,.btn{flex:none;border:1px solid var(--line);background:rgba(255,255,255,.07);border-radius:14px;color:#fff}
+.chip{padding:8px 12px;font-size:16px}
+.chip.on,.tab.on,.btn.on{background:rgba(255,182,230,.28);border-color:var(--pink)}
+.swatches{flex-wrap:wrap;gap:8px}
+.sw-c{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.35);flex:none}
+.sw-c.on{border-color:var(--pink);box-shadow:0 0 8px var(--pink)}
+input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
+.btn{padding:9px 13px;font-size:14px}
+.btn[disabled]{opacity:.3}
+.seg{gap:6px;flex-wrap:wrap}
+.seg .btn{min-width:44px;display:grid;place-items:center}
+.sw{display:flex;align-items:center;gap:8px;font-size:14px}
+.sw input{display:none}
+.sw i{width:40px;height:24px;border-radius:12px;background:rgba(255,255,255,.18);position:relative;transition:.2s;flex:none}
+.sw i::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+i{background:#d58bff}
+.sw input:checked+i::after{left:19px}
+.tabs{display:flex;margin-bottom:8px}
+.tab{padding:7px 11px;font-size:14px}
+.kgrid{display:flex;flex-wrap:wrap;gap:6px}
+.kb{padding:9px 11px;font-size:16px;min-height:40px}
+.kgrid.kana .kb{min-width:44px;font-size:20px;padding:6px 4px}
+.hint{font-size:12px;opacity:.6;margin:4px 0}
+.grid4{display:grid;grid-template-columns:70px repeat(4,1fr);gap:6px;align-items:center;margin:6px 0}
+.grid4 small{font-size:11px;opacity:.65}
+.grid4 .head{text-align:center}
+.toast{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translate(-50%,-10px);z-index:60;
+  max-width:84%;padding:10px 16px;border-radius:16px;background:var(--panel);border:1px solid var(--line);
+  font-size:13px;text-align:center;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="nebula"></div>
+  <div class="flow"></div>
+  <canvas id="stars"></canvas>
+  <div class="grid" id="grid"></div>
+  <canvas id="fx"></canvas>
+  <div class="texts" id="texts"></div>
+  <div class="frame-glow"></div>
+  <div class="frame"></div>
+
+  <!-- panels -->
+  <div class="sheet" id="sheet" hidden>
+    <div class="grab" id="grab"></div>
+
+    <div class="pane" id="p-text" hidden>
+      <div class="row chips" id="fontChips"></div>
+      <div class="row"><span class="lbl">size</span><input type="range" id="tSize" min="10" max="96"><output id="tSizeV"></output></div>
+      <div class="row swatches" id="swatches"></div>
+      <div class="row seg">
+        <button class="btn" data-al="left"  aria-label="align left"><svg width="18" height="14" viewBox="0 0 18 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 2h16M1 7h10M1 12h14"/></svg></button>
+        <button class="btn" data-al="center" aria-label="align center"><svg width="18" height="14" viewBox="0 0 18 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 2h16M4 7h10M2 12h14"/></svg></button>
+        <button class="btn" data-al="right" aria-label="align right"><svg width="18" height="14" viewBox="0 0 18 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 2h16M7 7h10M3 12h14"/></svg></button>
+        <label class="sw" style="margin-left:6px"><input type="checkbox" id="tGlow"><i></i><span>glow</span></label>
+        <button class="btn" id="tDel" style="margin-left:auto">delete</button>
+      </div>
+      <div class="row"><span class="lbl">letters</span><input type="range" id="tLs" min="-5" max="40"><output id="tLsV"></output></div>
+      <div class="row"><span class="lbl">lines</span><input type="range" id="tLh" min="90" max="260"><output id="tLhV"></output></div>
+      <div class="row"><span class="lbl">fade</span><input type="range" id="tOp" min="20" max="100"><output id="tOpV"></output></div>
+    </div>
+
+    <div class="pane" id="p-kao" hidden>
+      <div class="row tabs" id="kTabs"></div>
+      <div class="kgrid" id="kGrid"></div>
+    </div>
+
+    <div class="pane" id="p-collage" hidden>
+      <div class="row" style="flex-wrap:wrap">
+        <button class="btn" id="cPick">choose photo</button>
+        <button class="btn" id="cClear">remove photo</button>
+      </div>
+      <div class="row"><span class="lbl">zoom</span><input type="range" id="cZoom" min="100" max="300"><output id="cZoomV"></output></div>
+      <div class="hint">Tap a slot to select it. Drag a photo to reposition it. Tap an empty selected slot to add a photo.</div>
+      <div class="grid4">
+        <small></small><small class="head">left</small><small class="head">top</small><small class="head">bottom</small><small class="head">right</small>
+        <small>stretch edge</small>
+        <button class="btn" data-g="l">◀</button><button class="btn" data-g="t">▲</button><button class="btn" data-g="b">▼</button><button class="btn" data-g="r">▶</button>
+        <small>pull edge in</small>
+        <button class="btn" data-p="l">▶</button><button class="btn" data-p="t">▼</button><button class="btn" data-p="b">▲</button><button class="btn" data-p="r">◀</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="cFull">all 6 = one image</button>
+        <button class="btn" id="cReset">back to 6 slots</button>
+      </div>
+      <div class="row"><span class="lbl">soften</span><input type="range" id="sIo" min="25" max="100"></div>
+      <div class="row"><span class="lbl">darken</span><input type="range" id="sDim" min="0" max="75"></div>
+      <div class="row"><span class="lbl">edges</span><input type="range" id="sFeather" min="0" max="50"></div>
+    </div>
+
+    <div class="pane" id="p-fx" hidden>
+      <div class="row"><label class="sw"><input type="checkbox" id="fStars"><i></i><span>floating stars</span></label></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="fFlow"><i></i><span>inward glow</span></label></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="fSpark"><i></i><span>sparkles</span></label></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="fFlare"><i></i><span>soft light flares</span></label></div>
+      <div class="row"><span class="lbl">amount</span><input type="range" id="fAmt" min="10" max="100"></div>
+    </div>
+  </div>
+
+  <nav class="dock" id="dock">
+    <button data-act="collage" aria-label="collage">▦</button>
+    <button data-act="new" aria-label="new text">✎</button>
+    <button data-act="text" aria-label="text style">Aa</button>
+    <button data-act="kao" aria-label="kaomoji">◕‿◕</button>
+    <button data-act="fx" aria-label="effects">✧</button>
+    <button data-act="done" aria-label="done">✓</button>
+    <button data-act="hide" aria-label="hide menu">⌄</button>
+  </nav>
+  <button class="fab" id="fab" hidden aria-label="show menu">✦</button>
+  <div class="toast" id="toast"></div>
+  <input type="file" id="file" accept="image/*" multiple hidden>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const app = $('#app');
+const COLS = 3, ROWS = 2;
+const uid = () => Math.random().toString(36).slice(2, 9);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const KEY = 'diary.v1';
+const W = () => app.clientWidth, H = () => app.clientHeight;
+
+/* =================== state =================== */
+const DEF = { io: .85, dim: .15, feather: 14, stars: true, flow: true, spark: false, flare: false, fxi: .5 };
+const newTile = (c, r) => ({ id: uid(), c, r, w: 1, h: 1, img: null, z: 1, tx: 0, ty: 0 });
+const defaultTiles = () => { const a = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) a.push(newTile(c, r)); return a; };
+function load() {
+  try {
+    const j = JSON.parse(localStorage.getItem(KEY));
+    if (j && Array.isArray(j.tiles) && Array.isArray(j.texts)) { j.set = { ...DEF, ...j.set }; return j; }
+  } catch (e) {}
+  return {
+    tiles: defaultTiles(),
+    texts: [{ id: uid(), x: .14, y: .44, w: .72, text: 'begin anywhere.', font: 0, size: 22, color: '#f3e9ff', align: 'center', glow: false, ls: 6, lh: 140, op: .9 }],
+    set: { ...DEF }
+  };
+}
+let S = load();
+let saveT;
+const flush = () => { clearTimeout(saveT); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const save = () => { clearTimeout(saveT); saveT = setTimeout(flush, 250); };
+addEventListener('pagehide', flush);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+/* =================== image storage (IndexedDB) =================== */
+const idb = new Promise((res, rej) => {
+  try {
+    const q = indexedDB.open('diary', 1);
+    q.onupgradeneeded = () => q.result.createObjectStore('imgs');
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
+  } catch (e) { rej(e); }
+});
+const tx = (mode, fn) => idb.then(db => new Promise((res, rej) => {
+  const t = db.transaction('imgs', mode); const r = fn(t.objectStore('imgs'));
+  t.oncomplete = () => res(r.result); t.onerror = () => rej(t.error);
+}));
+const putImg = (id, b) => tx('readwrite', s => s.put(b, id));
+const getImg = id => tx('readonly', s => s.get(id));
+const delImg = id => tx('readwrite', s => s.delete(id));
+const allKeys = () => tx('readonly', s => s.getAllKeys());
+const urls = {};
+const mem = {}; // fallback if IndexedDB is unavailable
+async function urlFor(id) {
+  if (urls[id]) return urls[id];
+  let b = mem[id];
+  if (!b) { try { b = await getImg(id); } catch (e) {} }
+  return b ? (urls[id] = URL.createObjectURL(b)) : null;
+}
+function gcImages() {
+  const used = new Set(S.tiles.map(t => t.img).filter(Boolean));
+  allKeys().then(keys => keys.forEach(k => { if (!used.has(k)) { delImg(k); if (urls[k]) { URL.revokeObjectURL(urls[k]); delete urls[k]; } } })).catch(() => {});
+}
+async function prepImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const im = new Image(); im.src = url; await im.decode();
+    const max = 1600, s = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * s); c.height = Math.round(im.naturalHeight * s);
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    const png = file.type === 'image/png';
+    return await new Promise(r => c.toBlob(r, png ? 'image/png' : 'image/jpeg', .88));
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/* =================== toast =================== */
+const toastEl = $('#toast'); let toastT;
+function toast(m) { toastEl.textContent = m; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 2600); }
+
+/* =================== sizing, keyboard =================== */
+function setU() { app.style.setProperty('--u', (W() / 390) + 'px'); }
+new ResizeObserver(() => { setU(); sizeCanvas(); }).observe(app);
+function kb() {
+  const v = window.visualViewport; if (!v) return;
+  app.style.setProperty('--kb', Math.max(0, innerHeight - v.height - v.offsetTop) + 'px');
+}
+if (window.visualViewport) { visualViewport.addEventListener('resize', kb); visualViewport.addEventListener('scroll', kb); }
+
+/* =================== settings =================== */
+function applySettings() {
+  const s = S.set;
+  app.style.setProperty('--io', s.io); app.style.setProperty('--dim', s.dim); app.style.setProperty('--feather', s.feather);
+  app.classList.toggle('noflow', !s.flow);
+}
+
+/* =================== panes / dock =================== */
+const sheet = $('#sheet'), dock = $('#dock'), fab = $('#fab');
+let pane = null;
+function openPane(name, force) {
+  if (pane === name && !force) { closePane(); return; }
+  if (name === 'collage' && selected) deselect();
+  pane = name;
+  $$('.pane').forEach(p => p.hidden = p.id !== 'p-' + name);
+  sheet.hidden = false; sheet.classList.remove('min');
+  app.classList.toggle('collage', name === 'collage');
+  if (document.activeElement && document.activeElement.blur && document.activeElement !== document.body) document.activeElement.blur();
+  if (name === 'text') syncText();
+  if (name === 'collage') syncCollage();
+  if (name === 'kao') renderKao();
+  if (name === 'fx') syncFx();
+  updateDock();
+}
+function closePane() {
+  pane = null; sheet.hidden = true; app.classList.remove('collage'); updateDock();
+}
+function updateDock() { $$('[data-act]', dock).forEach(b => b.classList.toggle('on', b.dataset.act === pane)); }
+$('#grab').addEventListener('click', () => sheet.classList.toggle('min'));
+dock.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'collage' || a === 'kao' || a === 'fx') openPane(a);
+  else if (a === 'text') { if (!selected) { toast('select a text block first'); return; } openPane('text', true); }
+  else if (a === 'new') { const nb = addText(.15 + Math.random() * .1, .3 + Math.random() * .25); enterEdit(nb); }
+  else if (a === 'done') { if (document.activeElement) document.activeElement.blur(); }
+  else if (a === 'hide') { closePane(); dock.hidden = true; fab.hidden = false; }
+});
+fab.addEventListener('click', () => { dock.hidden = false; fab.hidden = true; });
+
+/* =================== collage =================== */
+const grid = $('#grid');
+let selTile = null, rtok = 0;
+const tileById = id => S.tiles.find(t => t.id === id);
+const curTile = () => tileById(selTile);
+const tf = t => `translate(${t.tx * 100}%,${t.ty * 100}%) scale(${t.z})`;
+function place(el, t) {
+  el.style.left = t.c / COLS * 100 + '%'; el.style.top = t.r / ROWS * 100 + '%';
+  el.style.width = t.w / COLS * 100 + '%'; el.style.height = t.h / ROWS * 100 + '%';
+}
+async function renderGrid() {
+  const tok = ++rtok, els = [];
+  for (const t of S.tiles) {
+    const el = document.createElement('div');
+    el.className = 'tile' + (t.img ? ' has' : '') + (t.id === selTile ? ' sel' : '');
+    el.dataset.id = t.id; place(el, t);
+    if (t.img) {
+      const u = await urlFor(t.img);
+      if (u) { const im = document.createElement('img'); im.className = 'im'; im.draggable = false; im.src = u; im.style.transform = tf(t); el.appendChild(im); }
+      else el.classList.remove('has');
+    }
+    el.insertAdjacentHTML('beforeend', '<div class="ring"></div>');
+    els.push(el);
+  }
+  if (tok === rtok) grid.replaceChildren(...els);
+}
+function afterTiles() {
+  if (selTile && !tileById(selTile)) selTile = null;
+  renderGrid(); gcImages(); save(); syncCollage();
+}
+function selectTile(id) {
+  selTile = id;
+  $$('.tile', grid).forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+  syncCollage();
+}
+const rect = t => ({ c: t.c, r: t.r, w: t.w, h: t.h });
+const inter = (a, b) => a.c < b.c + b.w && b.c < a.c + a.w && a.r < b.r + b.h && b.r < a.r + a.h;
+const inside = (a, b) => a.c >= b.c && a.r >= b.r && a.c + a.w <= b.c + b.w && a.r + a.h <= b.r + b.h;
+function growTile(dir) {
+  const t = curTile(); if (!t) { toast('select a slot first'); return; }
+  const n = rect(t);
+  if (dir === 'l') { if (t.c === 0) return; n.c--; n.w++; }
+  if (dir === 'r') { if (t.c + t.w >= COLS) return; n.w++; }
+  if (dir === 't') { if (t.r === 0) return; n.r--; n.h++; }
+  if (dir === 'b') { if (t.r + t.h >= ROWS) return; n.h++; }
+  const others = S.tiles.filter(o => o !== t && inter(o, n));
+  if (others.some(o => !inside(o, n))) { toast('a bigger slot is in the way. Pull that one in first.'); return; }
+  if (!t.img) { const o = others.find(o => o.img); if (o) { t.img = o.img; t.z = o.z; t.tx = o.tx; t.ty = o.ty; } }
+  S.tiles = S.tiles.filter(o => !others.includes(o));
+  Object.assign(t, n); clampPan(t); afterTiles();
+}
+function pullTile(dir) {
+  const t = curTile(); if (!t) { toast('select a slot first'); return; }
+  const free = [];
+  if (dir === 'l') { if (t.w < 2) return; for (let i = 0; i < t.h; i++) free.push([t.c, t.r + i]); t.c++; t.w--; }
+  if (dir === 'r') { if (t.w < 2) return; for (let i = 0; i < t.h; i++) free.push([t.c + t.w - 1, t.r + i]); t.w--; }
+  if (dir === 't') { if (t.h < 2) return; for (let i = 0; i < t.w; i++) free.push([t.c + i, t.r]); t.r++; t.h--; }
+  if (dir === 'b') { if (t.h < 2) return; for (let i = 0; i < t.w; i++) free.push([t.c + i, t.r + t.h - 1]); t.h--; }
+  free.forEach(([c, r]) => S.tiles.push(newTile(c, r)));
+  clampPan(t); afterTiles();
+}
+function clampPan(t) {
+  // keep the zoomed photo covering its slot; approximated from slot shape + natural size when known
+  const el = grid.querySelector(`.tile[data-id="${t.id}"] .im`);
+  const tw = W() * t.w / COLS, th = H() * t.h / ROWS;
+  let nw = el && el.naturalWidth, nh = el && el.naturalHeight;
+  if (!nw) { t.tx = clamp(t.tx, -.5, .5); t.ty = clamp(t.ty, -.5, .5); return; }
+  const s = Math.max(tw / nw, th / nh) * t.z;
+  const mx = Math.max(0, (nw * s - tw) / 2) / tw, my = Math.max(0, (nh * s - th) / 2) / th;
+  t.tx = clamp(t.tx, -mx, mx); t.ty = clamp(t.ty, -my, my);
+}
+$('#cFull').onclick = () => {
+  const cur = curTile() || S.tiles[0];
+  const src = cur.img ? cur : (S.tiles.find(t => t.img) || cur);
+  S.tiles = [{ id: cur.id, c: 0, r: 0, w: COLS, h: ROWS, img: src.img, z: src.z, tx: 0, ty: 0 }];
+  selTile = cur.id; afterTiles();
+};
+$('#cReset').onclick = () => {
+  const old = S.tiles; S.tiles = defaultTiles();
+  old.forEach(o => { if (o.img) { const n = S.tiles.find(t => t.c === o.c && t.r === o.r); if (n) n.img = o.img; } });
+  selTile = null; afterTiles();
+};
+$$('[data-g]').forEach(b => b.onclick = () => growTile(b.dataset.g));
+$$('[data-p]').forEach(b => b.onclick = () => pullTile(b.dataset.p));
+$('#cPick').onclick = () => pickFor();
+$('#cClear').onclick = () => { const t = curTile(); if (!t || !t.img) return; t.img = null; t.z = 1; t.tx = t.ty = 0; afterTiles(); };
+$('#cZoom').oninput = e => {
+  const t = curTile(); if (!t) return; t.z = e.target.value / 100; clampPan(t);
+  const im = grid.querySelector(`.tile[data-id="${t.id}"] .im`); if (im) im.style.transform = tf(t);
+  $('#cZoomV').textContent = t.z.toFixed(1) + '×'; save();
+};
+function syncCollage() {
+  const t = curTile();
+  $('#cClear').disabled = !t || !t.img; $('#cPick').disabled = !t;
+  $('#cZoom').disabled = !t || !t.img; $('#cZoom').value = t ? t.z * 100 : 100;
+  $('#cZoomV').textContent = (t ? t.z : 1).toFixed(1) + '×';
+  $$('[data-g]').forEach(b => {
+    const d = b.dataset.g;
+    b.disabled = !t || (d === 'l' && t.c === 0) || (d === 'r' && t.c + t.w >= COLS) || (d === 't' && t.r === 0) || (d === 'b' && t.r + t.h >= ROWS);
+  });
+  $$('[data-p]').forEach(b => { const d = b.dataset.p; b.disabled = !t || ((d === 'l' || d === 'r') ? t.w < 2 : t.h < 2); });
+  $('#sIo').value = S.set.io * 100; $('#sDim').value = S.set.dim * 100; $('#sFeather').value = S.set.feather;
+}
+$('#sIo').oninput = e => { S.set.io = e.target.value / 100; applySettings(); save(); };
+$('#sDim').oninput = e => { S.set.dim = e.target.value / 100; applySettings(); save(); };
+$('#sFeather').oninput = e => { S.set.feather = +e.target.value; applySettings(); save(); };
+
+// tile tap / pan
+let tg = null;
+grid.addEventListener('pointerdown', e => {
+  if (!app.classList.contains('collage')) return;
+  const el = e.target.closest('.tile'); if (!el) return;
+  const t = tileById(el.dataset.id); if (!t) return;
+  tg = { t, el, id: e.pointerId, sx: e.clientX, sy: e.clientY, tx: t.tx, ty: t.ty, moved: false, wasSel: selTile === t.id };
+  el.setPointerCapture(e.pointerId);
+  if (!tg.wasSel) selectTile(t.id);
+});
+grid.addEventListener('pointermove', e => {
+  if (!tg || e.pointerId !== tg.id) return;
+  const dx = e.clientX - tg.sx, dy = e.clientY - tg.sy;
+  if (!tg.moved && Math.hypot(dx, dy) < 6) return;
+  tg.moved = true;
+  const t = tg.t; if (!t.img) return;
+  t.tx = tg.tx + dx / tg.el.clientWidth; t.ty = tg.ty + dy / tg.el.clientHeight; clampPan(t);
+  const im = tg.el.querySelector('.im'); if (im) im.style.transform = tf(t);
+});
+const tileEnd = e => {
+  if (!tg) return;
+  const { t, moved, wasSel } = tg; tg = null;
+  if (moved) save(); else if (wasSel && !t.img) pickFor();
+};
+grid.addEventListener('pointerup', tileEnd); grid.addEventListener('pointercancel', () => { tg = null; });
+
+// file picking + dropping
+const fileIn = $('#file'); let pickTile = null;
+function pickFor() { pickTile = curTile(); if (!pickTile) { toast('select a slot first'); return; } fileIn.value = ''; fileIn.click(); }
+fileIn.addEventListener('change', () => addFiles([...fileIn.files], pickTile));
+async function addFiles(files, start) {
+  files = files.filter(f => f.type.startsWith('image/')); if (!files.length) return;
+  start = start || curTile() || S.tiles.find(t => !t.img) || S.tiles[0];
+  const targets = [start, ...S.tiles.filter(t => t !== start && !t.img)];
+  for (let i = 0; i < files.length && i < targets.length; i++) {
+    try {
+      const blob = await prepImage(files[i]); const id = uid();
+      try { await putImg(id, blob); } catch (e) { mem[id] = blob; toast('storage unavailable: this photo will not survive a refresh'); }
+      const t = targets[i]; t.img = id; t.z = 1; t.tx = t.ty = 0;
+    } catch (e) { toast('could not read that image'); }
+  }
+  afterTiles();
+}
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => {
+  e.preventDefault();
+  const r = app.getBoundingClientRect();
+  const c = clamp(Math.floor((e.clientX - r.left) / r.width * COLS), 0, COLS - 1), rr = clamp(Math.floor((e.clientY - r.top) / r.height * ROWS), 0, ROWS - 1);
+  const t = S.tiles.find(t => c >= t.c && c < t.c + t.w && rr >= t.r && rr < t.r + t.h);
+  addFiles([...e.dataTransfer.files], t);
+});
+
+/* =================== text blocks =================== */
+const FONTS = [
+  { n: 'Palatino', css: '"Palatino","Palatino Linotype","Book Antiqua",Georgia,serif' },
+  { n: 'Didot', css: 'Didot,"Bodoni 72","Times New Roman",serif' },
+  { n: 'Georgia', css: 'Georgia,serif' },
+  { n: 'Snell', css: '"Snell Roundhand","Apple Chancery",cursive' },
+  { n: 'Typewriter', css: '"American Typewriter","Courier New",monospace' },
+  { n: 'Courier', css: '"Courier New",Courier,monospace' },
+  { n: '明朝 Mincho', css: '"Hiragino Mincho ProN","Yu Mincho",serif' },
+  { n: '丸 Maru', css: '"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif' },
+  { n: 'Marker', css: '"Marker Felt","Chalkboard SE",cursive' },
+  { n: 'Sans', css: '-apple-system,"SF Pro Text",system-ui,sans-serif' }
+];
+const COLORS = ['#f3e9ff', '#ffffff', '#ffb6e6', '#c9a0ff', '#9fb4ff', '#8fe3d6', '#ffd9a0', '#b8a9c9', '#6d5a8a', '#1a0b2e'];
+const textsEl = $('#texts');
+const els = new Map();
+let selected = null, last = { moved: false };
+
+function styleBlock(b) {
+  const el = els.get(b.id); if (!el) return;
+  const t = $('.txt', el);
+  el.style.left = b.x * 100 + '%'; el.style.top = b.y * 100 + '%'; el.style.width = b.w * 100 + '%';
+  t.style.fontFamily = FONTS[b.font] ? FONTS[b.font].css : FONTS[0].css;
+  t.style.fontSize = `calc(${b.size} * var(--u))`;
+  t.style.color = b.color; t.style.textAlign = b.align;
+  t.style.letterSpacing = (b.ls / 100) + 'em'; t.style.lineHeight = b.lh / 100; t.style.opacity = b.op;
+  t.style.setProperty('--gc', b.color);
+  el.classList.toggle('glow', !!b.glow);
+}
+function mkBlock(b) {
+  const el = document.createElement('div'); el.className = 'block'; el.dataset.id = b.id;
+  el.innerHTML = '<div class="txt" data-ph="…" spellcheck="false" autocorrect="off"></div><div class="hd h-move">✥</div><div class="hd h-del">×</div><div class="hd h-size">↔</div>';
+  const t = $('.txt', el); t.textContent = b.text;
+  els.set(b.id, el); textsEl.appendChild(el); styleBlock(b);
+
+  let g = null;
+  const begin = (e, kind) => { g = { kind, sx: e.clientX, sy: e.clientY, x: b.x, y: b.y, w: b.w, moved: false, wasSel: selected === b, id: e.pointerId }; try { el.setPointerCapture(e.pointerId); } catch (_) {} };
+  el.addEventListener('pointerdown', e => {
+    const h = e.target.closest('.hd');
+    if (h) { if (h.classList.contains('h-del')) return; e.preventDefault(); begin(e, h.classList.contains('h-size') ? 'size' : 'move'); return; }
+    if (el.classList.contains('editing')) return;
+    begin(e, 'move');
+  });
+  el.addEventListener('pointermove', e => {
+    if (!g || e.pointerId !== g.id) return;
+    const dx = e.clientX - g.sx, dy = e.clientY - g.sy;
+    if (!g.moved && Math.hypot(dx, dy) < 5) return;
+    g.moved = true; if (selected !== b) select(b);
+    if (g.kind === 'move') { b.x = clamp(g.x + dx / W(), -.25, .95); b.y = clamp(g.y + dy / H(), -.05, .97); }
+    else b.w = clamp(g.w + dx / W(), .14, 1.1 - b.x);
+    styleBlock(b);
+  });
+  const up = () => { if (!g) return; last = { moved: g.moved, wasSel: g.wasSel, kind: g.kind }; if (g.moved) save(); g = null; };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  el.addEventListener('click', e => {
+    if (e.target.closest('.h-del')) { removeBlock(b); return; }
+    if (e.target.closest('.hd')) return;
+    if (last.moved) { last.moved = false; return; }
+    if (el.classList.contains('editing')) return;
+    if (last.wasSel && selected === b) enterEdit(b); else select(b);
+    last = { moved: false };
+  });
+  t.addEventListener('input', () => { if (!t.textContent) t.innerHTML = ''; b.text = t.innerText; save(); });
+  t.addEventListener('blur', () => {
+    el.classList.remove('editing'); t.contentEditable = 'false'; dock.classList.remove('editing');
+    b.text = t.innerText; save(); scrollTo(0, 0);
+    if (selected === b && !pane) openPane('text');
+  });
+  return el;
+}
+function addText(x, y, text = '') {
+  const b = { id: uid(), x: clamp(x, 0, .6), y: clamp(y, 0, .9), w: .7, text, font: 0, size: 22, color: '#f3e9ff', align: 'left', glow: false, ls: 6, lh: 140, op: .95 };
+  S.texts.push(b); mkBlock(b); select(b); save(); return b;
+}
+function removeBlock(b) {
+  if (selected === b) { selected = null; if (pane === 'text') closePane(); }
+  const el = els.get(b.id); if (el) el.remove(); els.delete(b.id);
+  S.texts = S.texts.filter(x => x !== b); save();
+}
+function select(b) {
+  if (selected === b) return;
+  deselect();
+  selected = b; els.get(b.id).classList.add('sel');
+  if (pane !== 'kao') openPane('text', true);
+  syncText();
+}
+function deselect() {
+  const b = selected; if (!b) return;
+  selected = null;
+  const el = els.get(b.id);
+  if (el) { const t = $('.txt', el); if (document.activeElement === t) t.blur(); el.classList.remove('sel', 'editing'); }
+  if (!b.text.trim()) removeBlock(b);
+  if (pane === 'text') closePane();
+}
+function enterEdit(b) {
+  const el = els.get(b.id), t = $('.txt', el);
+  if (pane) closePane();
+  t.contentEditable = 'plaintext-only'; if (t.contentEditable !== 'plaintext-only') t.contentEditable = 'true';
+  el.classList.add('editing'); dock.classList.add('editing');
+  t.focus();
+  const r = document.createRange(); r.selectNodeContents(t); r.collapse(false);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+// tap empty space: deselect; double-tap empty space: new text there
+let lastTap = { t: 0, x: 0, y: 0 };
+app.addEventListener('pointerdown', e => {
+  if (app.classList.contains('collage')) return;
+  if (e.target.closest('.block,.dock,.sheet,.fab')) return;
+  deselect();
+});
+app.addEventListener('click', e => {
+  if (app.classList.contains('collage')) return;
+  if (e.target.closest('.block,.dock,.sheet,.fab')) return;
+  const now = Date.now();
+  if (now - lastTap.t < 380 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
+    const r = app.getBoundingClientRect();
+    const nb = addText((e.clientX - r.left) / r.width - .1, (e.clientY - r.top) / r.height - .03);
+    enterEdit(nb); lastTap = { t: 0, x: 0, y: 0 };
+  } else lastTap = { t: now, x: e.clientX, y: e.clientY };
+});
+
+/* ----- text panel ----- */
+const fontChips = $('#fontChips'), sw = $('#swatches');
+FONTS.forEach((f, i) => {
+  const c = document.createElement('button'); c.className = 'chip'; c.textContent = f.n; c.style.fontFamily = f.css; c.dataset.i = i;
+  c.onclick = () => upd(b => b.font = i); fontChips.appendChild(c);
+});
+COLORS.forEach(col => {
+  const c = document.createElement('button'); c.className = 'sw-c'; c.style.background = col; c.dataset.c = col; c.setAttribute('aria-label', col);
+  c.onclick = () => upd(b => b.color = col); sw.appendChild(c);
+});
+const colIn = document.createElement('input'); colIn.type = 'color'; colIn.id = 'tColor'; sw.appendChild(colIn);
+colIn.oninput = () => upd(b => b.color = colIn.value);
+function upd(fn) { const b = selected; if (!b) return; fn(b); styleBlock(b); syncText(); save(); }
+const bind = (id, f) => $('#' + id).addEventListener('input', e => upd(b => f(b, +e.target.value)));
+bind('tSize', (b, v) => b.size = v); bind('tLs', (b, v) => b.ls = v); bind('tLh', (b, v) => b.lh = v); bind('tOp', (b, v) => b.op = v / 100);
+$$('[data-al]').forEach(btn => btn.onclick = () => upd(b => b.align = btn.dataset.al));
+$('#tGlow').onchange = e => upd(b => b.glow = e.target.checked);
+$('#tDel').onclick = () => { if (selected) removeBlock(selected); };
+function syncText() {
+  const b = selected; if (!b) return;
+  $$('.chip', fontChips).forEach(c => c.classList.toggle('on', +c.dataset.i === b.font));
+  $$('.sw-c', sw).forEach(c => c.classList.toggle('on', c.dataset.c === b.color));
+  $$('[data-al]').forEach(x => x.classList.toggle('on', x.dataset.al === b.align));
+  $('#tSize').value = b.size; $('#tSizeV').textContent = b.size;
+  $('#tLs').value = b.ls; $('#tLsV').textContent = b.ls;
+  $('#tLh').value = b.lh; $('#tLhV').textContent = b.lh;
+  $('#tOp').value = Math.round(b.op * 100); $('#tOpV').textContent = Math.round(b.op * 100);
+  $('#tGlow').checked = !!b.glow;
+  if (/^#[0-9a-f]{6}$/i.test(b.color)) colIn.value = b.color;
+}
+
+/* =================== kaomoji / symbols / kana =================== */
+const vs = s => [...s].map(ch => { const c = ch.codePointAt(0); return (c >= 0x2600 && c <= 0x26ff) ? ch + '\uFE0E' : ch; }).join('');
+const HIRA = 'あいうえお かきくけこ さしすせそ たちつてと なにぬねの はひふへほ まみむめも やゆよ らりるれろ わをん がぎぐげご ざじずぜぞ だぢづでど ばびぶべぼ ぱぴぷぺぽ ぁぃぅぇぉ ゃゅょっ ー 、 。 「 」 ・ ！ ？ … ～';
+const hira = [...HIRA.replace(/\s/g, '')];
+const kata = hira.map(c => /[ぁ-ゖ]/.test(c) ? String.fromCharCode(c.charCodeAt(0) + 0x60) : c);
+const KAO = {
+  quiet: ['(－_－)', '( ´ - ` )', '(・_・)', '(._.)', '(︶︹︺)', '(｡-ω-｡)', '(ᵕ—ᴗ—)', '(◞‸◟)', '( ˘ω˘ )', '(´-ω-`)', '(￣ー￣)', '(-_-;)', '(¯﹃¯)', '(˘･_･˘)', '(ㅍ_ㅍ)', '(︶｡︶)'],
+  heavy: ['(╥﹏╥)', '(；ω；)', '(T_T)', '(つ﹏<｡)', '(ノ_<。)', '(｡•́︿•̀｡)', '(´；ω；`)', '(இдஇ)', 'orz', '(︶︹︺)', '(ノд`)', '( ´•̥̥̥ω•̥̥̥` )', '(ಥ﹏ಥ)', '(._. )', '(っ˘̩╭╮˘̩)っ', '(・̥_・̥)'],
+  uneasy: ['(°ロ°)', '(ﾟдﾟ)', '(；一_一)', '(¬_¬)', '(・・;)', '(ΘдΘ)', 'Σ(°△°|||)', '(；￣Д￣)', '(눈_눈)', '(⊙_⊙)', '( ꒪Д꒪)', '( ･᷄ ﹏ ･᷅ )', '(-_-)ゞ', '(ーー;)', '(°_°)', '(ΘεΘ;)'],
+  dream: ['(✧ω✧)', '(☆ω☆)', '☾ (-ω-) ☽', '(˘▾˘)~♪', '( ◜‿◝ )', '(◕‿◕✿)', '(⊙‿⊙)', '(◉‿◉)', '(⌒‿⌒)', '(＾▽＾)', '(*´▽`*)', '(∩´∀`)∩', '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧', '(∩^o^)⊃━☆ﾟ.*･｡ﾟ', '⋆｡°✩ ₊˚', '✦ ˚ ₊ ⋆', '(๑•́ ₃ •̀๑)', '(´｡• ᵕ •｡`)'],
+  tender: ['(｡♥‿♥｡)', '(っ´ω`c)♡', '(´,,•ω•,,)♡', '( ˘ ³˘)♥', '(◍•ᴗ•◍)❤', '(つ✧ω✧)つ', '⊂(・ω・*⊂)', '(*˘︶˘*).｡.:*♡', '( ˘͈ ᵕ ˘͈♡)', '(๑˃ᴗ˂)ﻭ', '(づ｡◕‿‿◕｡)づ', '(⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)', '(´∩｡• ᵕ •｡∩`)', '(✿ ♡‿♡)'],
+  anger: ['(╬ Ò﹏Ó)', '(ノಠ益ಠ)ノ', '(¬_¬")', '(`Д´)', 'ヽ(`Д´)ﾉ', '(｀ー´)', '(-`д´-)', '٩(╬ʘ益ʘ╬)۶', '(҂`з´)', '(｀⌒´メ)', '(╯°□°)╯︵ ┻━┻', '┬─┬ノ( º _ ºノ)'],
+  animals: ['(=^･ω･^=)', 'ฅ^•ﻌ•^ฅ', '(ᵔᴥᵔ)', 'ʕ•ᴥ•ʔ', '(ↀДↀ)', 'U^ェ^U', '/ᐠ｡ꞈ｡ᐟ\\', '(｡•ω•｡)ﾉ', '₍ᐢ•ﻌ•ᐢ₎', 'ʕ ᵔᴥᵔ ʔ', '(=①ω①=)', '(´・ω・`)', '(°ᴥ°)', '૮ ˶ᵔ ᵕ ᵔ˶ ა'],
+  gesture: ['(ﾉ´ヮ`)ﾉ', 'm(_ _)m', '(ง •̀_•́)ง', '( ´_ゝ`)', '(*・ω・)ﾉ', '(⌒_⌒;)', '(´ー｀)', '(ノ´∀`)', '\\(^o^)/', 'ヾ(´︶`*)ﾉ♬', '(´⌣`ʃƪ)', '(๑•̀ㅂ•́)و✧', '(￣▽￣)ゞ', 'ヽ(´ー｀)ノ'],
+  symbols: [...'☾ ☽ ✦ ✧ ✶ ✷ ⋆ ˚ ⁂ ※ ☉ ☿ ♀ ♁ ♂ ♃ ♄ ♅ ♆ ♇ ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ ⚹ ⛧ ☥ ☯ ☸ ⚚ ✠ ✡ ∞ ⸸ ᛉ ᚨ ᛟ ᛞ ᚱ ᛗ ⟡ ◈ ❖ ⌖ ⊹ ✺ ❍ ◯ △ ▽ ◇ ⌬ ⍟ ⏣ ☍ ☌ ☊ ☋ ⚷ ⚳ † ‡ § ¶ ✂ ☙ ❧ ⁑ ◌ ⊙ ☁ ☂ ☄ ⚡'.split(' ')].map(vs),
+  'あ': hira, 'ア': kata,
+  'àè': [...'à è é ì ò ù À È É Ì Ò Ù ç « » “ ” ‘ ’ — – … ° ‹ › ·'.split(' ')]
+};
+const KTABS = [['recent', '🕘'], ['quiet', 'quiet'], ['heavy', 'heavy'], ['uneasy', 'uneasy'], ['dream', 'dream'], ['tender', 'tender'], ['anger', 'anger'], ['animals', 'animals'], ['gesture', 'gesture'], ['symbols', '☾ symbols'], ['あ', 'あ'], ['ア', 'ア'], ['àè', 'àè IT']];
+let ktab = 'quiet';
+let recent = []; try { recent = JSON.parse(localStorage.getItem('diary.recent')) || []; } catch (e) {}
+function renderKao() {
+  const tabs = $('#kTabs'); tabs.replaceChildren();
+  KTABS.forEach(([k, label]) => {
+    const b = document.createElement('button'); b.className = 'tab' + (k === ktab ? ' on' : ''); b.textContent = label;
+    b.onclick = () => { ktab = k; renderKao(); }; tabs.appendChild(b);
+  });
+  const g = $('#kGrid'); g.replaceChildren();
+  const list = ktab === 'recent' ? recent : KAO[ktab];
+  g.classList.toggle('kana', ktab === 'あ' || ktab === 'ア' || ktab === 'àè' || ktab === 'symbols');
+  if (!list.length) { g.innerHTML = '<div class="hint">nothing yet. Things you insert will appear here.</div>'; return; }
+  list.forEach(s => { const b = document.createElement('button'); b.className = 'kb'; b.textContent = s; b.onclick = () => insertText(s); g.appendChild(b); });
+}
+let lastRange = null;
+document.addEventListener('selectionchange', () => {
+  const s = getSelection(); if (!s || !s.rangeCount) return;
+  const r = s.getRangeAt(0);
+  const n = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement;
+  const t = n && n.closest && n.closest('.txt');
+  if (t && t.isContentEditable) lastRange = r.cloneRange();
+});
+function insertText(s) {
+  recent = [s, ...recent.filter(x => x !== s)].slice(0, 24);
+  try { localStorage.setItem('diary.recent', JSON.stringify(recent)); } catch (e) {}
+  let b = selected;
+  if (!b) { b = addText(.15, .35 + Math.random() * .2); if (pane !== 'kao') openPane('kao', true); }
+  const el = els.get(b.id), t = $('.txt', el);
+  let r;
+  if (lastRange && t.contains(lastRange.startContainer)) r = lastRange;
+  else { r = document.createRange(); r.selectNodeContents(t); r.collapse(false); }
+  r.deleteContents();
+  const n = document.createTextNode(s); r.insertNode(n); r.setStartAfter(n); r.collapse(true); lastRange = r;
+  if (document.activeElement === t) { const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+  b.text = t.innerText; save();
+}
+
+/* =================== effects =================== */
+const fxPane = { stars: '#fStars', flow: '#fFlow', spark: '#fSpark', flare: '#fFlare' };
+Object.entries(fxPane).forEach(([k, sel]) => $(sel).onchange = e => { S.set[k] = e.target.checked; applySettings(); save(); });
+$('#fAmt').oninput = e => { S.set.fxi = e.target.value / 100; save(); };
+function syncFx() { Object.entries(fxPane).forEach(([k, sel]) => $(sel).checked = !!S.set[k]); $('#fAmt').value = S.set.fxi * 100; }
+
+const cs = $('#stars'), cf = $('#fx'), sx = cs.getContext('2d'), fxx = cf.getContext('2d');
+let dpr = Math.min(2, devicePixelRatio || 1), CW = 0, CH = 0, stars = [], sparks = [], flares = [];
+function sizeCanvas() {
+  CW = W(); CH = H(); if (!CW) return;
+  for (const c of [cs, cf]) { c.width = Math.round(CW * dpr); c.height = Math.round(CH * dpr); }
+  sx.setTransform(dpr, 0, 0, dpr, 0, 0); fxx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const n = Math.round(CW * CH / 4500), cols = ['#ffffff', '#ffd6ff', '#e0b0ff', '#cfe0ff'];
+  stars = Array.from({ length: n }, () => ({ x: Math.random() * CW, y: Math.random() * CH, r: Math.random() * 1.2 + .3, p: Math.random() * 6.28, s: Math.random() * .8 + .3, v: Math.random() * 4 + 1, c: cols[Math.random() * 4 | 0] }));
+  flares = Array.from({ length: 4 }, (_, i) => ({ x: Math.random() * CW, y: Math.random() * CH, vx: (Math.random() - .5) * 8, vy: (Math.random() - .5) * 8, r: (90 + Math.random() * 90), p: Math.random() * 6, col: [[255, 140, 210], [170, 130, 255], [255, 190, 170], [140, 200, 255]][i] }));
+}
+function star4(c, x, y, r) {
+  c.beginPath(); c.moveTo(x, y - r); c.quadraticCurveTo(x, y, x + r, y); c.quadraticCurveTo(x, y, x, y + r);
+  c.quadraticCurveTo(x, y, x - r, y); c.quadraticCurveTo(x, y, x, y - r); c.fill();
+}
+let lastF = 0, wasStars = true, wasFx = true;
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (document.hidden || now - lastF < 33 || !CW) return;
+  const dt = Math.min(.1, (now - lastF) / 1000); lastF = now; const t = now / 1000, s = S.set;
+  // stars
+  if (s.stars) {
+    sx.clearRect(0, 0, CW, CH);
+    for (const st of stars) {
+      st.y -= st.v * dt; if (st.y < -2) { st.y = CH + 2; st.x = Math.random() * CW; }
+      sx.globalAlpha = .25 + .6 * (.5 + .5 * Math.sin(t * st.s + st.p));
+      sx.fillStyle = st.c; sx.beginPath(); sx.arc(st.x, st.y, st.r, 0, 6.283); sx.fill();
+    }
+    sx.globalAlpha = 1; wasStars = true;
+  } else if (wasStars) { sx.clearRect(0, 0, CW, CH); wasStars = false; }
+  // sparkles + flares
+  if (s.spark || s.flare) {
+    fxx.clearRect(0, 0, CW, CH); wasFx = true;
+    if (s.flare) {
+      fxx.globalCompositeOperation = 'lighter';
+      for (const f of flares) {
+        f.x += f.vx * dt; f.y += f.vy * dt;
+        if (f.x < -f.r) f.x = CW + f.r; if (f.x > CW + f.r) f.x = -f.r; if (f.y < -f.r) f.y = CH + f.r; if (f.y > CH + f.r) f.y = -f.r;
+        const a = (.05 + .07 * (.5 + .5 * Math.sin(t * .4 + f.p))) * (.4 + s.fxi * 1.2), [r, g, b] = f.col;
+        const gr = fxx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+        gr.addColorStop(0, `rgba(${r},${g},${b},${a})`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        fxx.fillStyle = gr; fxx.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
+      }
+      fxx.globalCompositeOperation = 'source-over';
+    }
+    if (s.spark) {
+      const max = 5 + Math.round(20 * s.fxi);
+      if (sparks.length < max && Math.random() < .12) sparks.push({ x: Math.random() * CW, y: Math.random() * CH, age: 0, life: 1.4 + Math.random() * 1.8, r: 3 + Math.random() * 6, c: ['#ffffff', '#ffd6ff', '#e0b0ff'][Math.random() * 3 | 0] });
+      fxx.shadowBlur = 6;
+      sparks = sparks.filter(p => (p.age += dt) < p.life);
+      for (const p of sparks) {
+        const k = p.age / p.life; fxx.globalAlpha = Math.sin(k * Math.PI) * .9; fxx.fillStyle = p.c; fxx.shadowColor = p.c;
+        star4(fxx, p.x, p.y, p.r * (.5 + Math.sin(k * Math.PI) * .6));
+      }
+      fxx.shadowBlur = 0; fxx.globalAlpha = 1;
+    } else sparks = [];
+  } else if (wasFx) { fxx.clearRect(0, 0, CW, CH); wasFx = false; sparks = []; }
+}
+
+/* =================== boot =================== */
+setU(); kb(); applySettings(); sizeCanvas();
+S.texts.forEach(mkBlock);
+renderGrid();
+requestAnimationFrame(frame);
+if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+if (/iPhone|iPad/.test(navigator.userAgent) && !navigator.standalone && !localStorage.getItem('diary.hint')) {
+  try { localStorage.setItem('diary.hint', '1'); } catch (e) {}
+  setTimeout(() => toast('Share ⎋ then “Add to Home Screen” for the full-screen diary'), 800);
+}
+})();
+</script>
+</body>
+</html>
