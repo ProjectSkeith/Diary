@@ -1,6 +1,6 @@
 // Offline cache. If you change any file, bump the version number below
 // so phones pick up the new copy.
-const V = 'diary-v1';
+const V = 'diary-v2';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {

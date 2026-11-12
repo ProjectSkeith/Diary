@@ -34,8 +34,9 @@ button{font:inherit;color:inherit;background:none;border:0;touch-action:manipula
     radial-gradient(60% 40% at 25% 20%,rgba(255,120,200,.36),transparent 70%),
     radial-gradient(55% 45% at 80% 35%,rgba(150,90,255,.40),transparent 70%),
     radial-gradient(70% 50% at 40% 85%,rgba(200,70,160,.32),transparent 70%),
-    radial-gradient(circle at 50% 50%,#3a1460 0%,#200a3a 55%,#0f0420 100%);
-  background-size:150% 150%;animation:neb 60s ease-in-out infinite alternate}
+    radial-gradient(circle at 50% 50%,rgba(255,255,255,.07) 0%,transparent 55%,rgba(0,0,0,.4) 100%);
+  background-size:150% 150%;background-color:var(--bg,#2a0e4a);animation:neb 60s ease-in-out infinite alternate}
+.app.noclouds .nebula{background-image:none;animation:none}
 @keyframes neb{from{background-position:0% 0%}to{background-position:100% 100%}}
 .flow{position:absolute;inset:-12%;z-index:1;pointer-events:none;
   background:radial-gradient(closest-side,transparent 52%,rgba(255,140,220,.26) 84%,rgba(201,160,255,.34) 100%);
@@ -76,7 +77,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .txt:empty::before{content:attr(data-ph);opacity:.4}
 .block.editing .txt{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 .block.sel .txt{box-shadow:0 0 0 1px rgba(255,182,230,.55);background:rgba(20,6,38,.18)}
-.block.glow .txt{text-shadow:0 0 calc(2*var(--u)) var(--gc),0 0 calc(8*var(--u)) #ffb6e6,0 0 calc(18*var(--u)) #c9a0ff}
+.block.glow .txt{text-shadow:0 0 calc(2*var(--u)) var(--gc),0 0 calc(8*var(--u)) var(--gg),0 0 calc(18*var(--u)) var(--gg)}
 .hd{position:absolute;display:none;width:34px;height:34px;border-radius:50%;place-items:center;z-index:3;
   background:rgba(40,14,66,.92);border:1px solid var(--pink);color:#fff;font-size:16px;line-height:1}
 .block.sel .hd{display:grid}
@@ -104,25 +105,24 @@ canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   bottom:calc(var(--kb) + max(env(safe-area-inset-bottom),12px) + 4px);font-size:16px;
   background:var(--panel);border:1px solid var(--line);opacity:.65}
 
-.sheet{position:absolute;left:10px;right:10px;z-index:45;max-height:44%;overflow:auto;
+.sheet{position:absolute;left:10px;right:10px;z-index:45;max-height:52%;overflow:auto;scrollbar-width:thin;scrollbar-color:#c9a0ff rgba(255,255,255,.1);
   bottom:calc(var(--kb) + max(env(safe-area-inset-bottom),12px) + 62px);
   padding:6px 14px 14px;border-radius:24px;background:var(--panel);border:1px solid var(--line);
   -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 26px rgba(201,160,255,.22)}
 .sheet.min .pane{display:none}
 .grab{width:44px;height:5px;border-radius:3px;background:rgba(255,182,230,.4);margin:2px auto 8px;cursor:pointer}
 .row{display:flex;align-items:center;gap:10px;margin:8px 0}
-.lbl{width:46px;font-size:12px;opacity:.7;flex:none}
+.lbl{width:56px;font-size:12px;opacity:.7;flex:none}
 .row output{width:30px;font-size:12px;opacity:.7;text-align:right;flex:none}
 input[type=range]{flex:1;min-width:0;accent-color:var(--pink);height:28px}
-.chips,.tabs{overflow-x:auto;gap:6px;padding-bottom:2px;scrollbar-width:none}
-.chips::-webkit-scrollbar,.tabs::-webkit-scrollbar{display:none}
+.chips,.tabs{flex-wrap:wrap;gap:6px}
 .chip,.tab,.kb,.btn{flex:none;border:1px solid var(--line);background:rgba(255,255,255,.07);border-radius:14px;color:#fff}
 .chip{padding:8px 12px;font-size:16px}
 .chip.on,.tab.on,.btn.on{background:rgba(255,182,230,.28);border-color:var(--pink)}
 .swatches{flex-wrap:wrap;gap:8px}
 .sw-c{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.35);flex:none}
 .sw-c.on{border-color:var(--pink);box-shadow:0 0 8px var(--pink)}
-input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
+input[type=color]{width:56px;height:36px;border:1px solid var(--line);border-radius:10px;background:none;padding:2px;flex:none}
 .btn{padding:9px 13px;font-size:14px}
 .btn[disabled]{opacity:.3}
 .seg{gap:6px;flex-wrap:wrap}
@@ -166,7 +166,7 @@ input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
     <div class="pane" id="p-text" hidden>
       <div class="row chips" id="fontChips"></div>
       <div class="row"><span class="lbl">size</span><input type="range" id="tSize" min="10" max="96"><output id="tSizeV"></output></div>
-      <div class="row swatches" id="swatches"></div>
+      <div class="row"><span class="lbl">color</span><input type="color" id="tColor"><span class="lbl" style="margin-left:6px;width:auto">glow</span><input type="color" id="tGc"></div>
       <div class="row seg">
         <button class="btn" data-al="left"  aria-label="align left"><svg width="18" height="14" viewBox="0 0 18 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 2h16M1 7h10M1 12h14"/></svg></button>
         <button class="btn" data-al="center" aria-label="align center"><svg width="18" height="14" viewBox="0 0 18 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 2h16M4 7h10M2 12h14"/></svg></button>
@@ -188,6 +188,7 @@ input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
       <div class="row" style="flex-wrap:wrap">
         <button class="btn" id="cPick">choose photo</button>
         <button class="btn" id="cClear">remove photo</button>
+        <button class="btn" id="cFit">mode: fill slot</button>
       </div>
       <div class="row"><span class="lbl">zoom</span><input type="range" id="cZoom" min="100" max="300"><output id="cZoomV"></output></div>
       <div class="hint">Tap a slot to select it. Drag a photo to reposition it. Tap an empty selected slot to add a photo.</div>
@@ -202,6 +203,7 @@ input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
         <button class="btn" id="cFull">all 6 = one image</button>
         <button class="btn" id="cReset">back to 6 slots</button>
       </div>
+      <div class="row"><span class="lbl">backdrop</span><input type="color" id="sBg"><label class="sw" style="margin-left:8px"><input type="checkbox" id="sClouds"><i></i><span>nebula clouds</span></label></div>
       <div class="row"><span class="lbl">soften</span><input type="range" id="sIo" min="25" max="100"></div>
       <div class="row"><span class="lbl">darken</span><input type="range" id="sDim" min="0" max="75"></div>
       <div class="row"><span class="lbl">edges</span><input type="range" id="sFeather" min="0" max="50"></div>
@@ -212,6 +214,10 @@ input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
       <div class="row"><label class="sw"><input type="checkbox" id="fFlow"><i></i><span>inward glow</span></label></div>
       <div class="row"><label class="sw"><input type="checkbox" id="fSpark"><i></i><span>sparkles</span></label></div>
       <div class="row"><label class="sw"><input type="checkbox" id="fFlare"><i></i><span>soft light flares</span></label></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="fRainbow"><i></i><span>rainbow glare</span></label></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="fSnow"><i></i><span>colorful snow</span></label></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="fBunny"><i></i><span>tiny bunnies raining</span></label></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="fSilly"><i></i><span>silly rain</span></label></div>
       <div class="row"><span class="lbl">amount</span><input type="range" id="fAmt" min="10" max="100"></div>
     </div>
   </div>
@@ -236,15 +242,15 @@ input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
-const COLS = 3, ROWS = 2;
+const COLS = 2, ROWS = 3;
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const KEY = 'diary.v1';
 const W = () => app.clientWidth, H = () => app.clientHeight;
 
 /* =================== state =================== */
-const DEF = { io: .85, dim: .15, feather: 14, stars: true, flow: true, spark: false, flare: false, fxi: .5 };
-const newTile = (c, r) => ({ id: uid(), c, r, w: 1, h: 1, img: null, z: 1, tx: 0, ty: 0 });
+const DEF = { io: .85, dim: .15, feather: 14, stars: true, flow: true, spark: false, flare: false, rainbow: false, snow: false, bunny: false, silly: false, fxi: .5, bg: '#2a0e4a', clouds: true };
+const newTile = (c, r) => ({ id: uid(), c, r, w: 1, h: 1, img: null, fit: false, z: 1, tx: 0, ty: 0 });
 const defaultTiles = () => { const a = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) a.push(newTile(c, r)); return a; };
 function load() {
   try {
@@ -258,6 +264,13 @@ function load() {
   };
 }
 let S = load();
+// older saves used a 3x2 grid: move their photos into the new 2x3 grid
+if (S.grid !== '2x3') {
+  const imgs = S.tiles.filter(t => t.img);
+  S.tiles = defaultTiles();
+  imgs.forEach((o, i) => { if (S.tiles[i]) { S.tiles[i].img = o.img; S.tiles[i].fit = o.fit; } });
+  S.grid = '2x3';
+}
 let saveT;
 const flush = () => { clearTimeout(saveT); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const save = () => { clearTimeout(saveT); saveT = setTimeout(flush, 250); };
@@ -324,6 +337,7 @@ function applySettings() {
   const s = S.set;
   app.style.setProperty('--io', s.io); app.style.setProperty('--dim', s.dim); app.style.setProperty('--feather', s.feather);
   app.classList.toggle('noflow', !s.flow);
+  app.style.setProperty('--bg', s.bg); app.classList.toggle('noclouds', !s.clouds);
 }
 
 /* =================== panes / dock =================== */
@@ -377,7 +391,7 @@ async function renderGrid() {
     el.dataset.id = t.id; place(el, t);
     if (t.img) {
       const u = await urlFor(t.img);
-      if (u) { const im = document.createElement('img'); im.className = 'im'; im.draggable = false; im.src = u; im.style.transform = tf(t); el.appendChild(im); }
+      if (u) { const im = document.createElement('img'); im.className = 'im'; im.draggable = false; im.src = u; im.style.objectFit = t.fit ? 'contain' : 'cover'; im.style.transform = tf(t); el.appendChild(im); }
       else el.classList.remove('has');
     }
     el.insertAdjacentHTML('beforeend', '<div class="ring"></div>');
@@ -406,7 +420,7 @@ function growTile(dir) {
   if (dir === 'b') { if (t.r + t.h >= ROWS) return; n.h++; }
   const others = S.tiles.filter(o => o !== t && inter(o, n));
   if (others.some(o => !inside(o, n))) { toast('a bigger slot is in the way. Pull that one in first.'); return; }
-  if (!t.img) { const o = others.find(o => o.img); if (o) { t.img = o.img; t.z = o.z; t.tx = o.tx; t.ty = o.ty; } }
+  if (!t.img) { const o = others.find(o => o.img); if (o) { t.img = o.img; t.fit = o.fit; t.z = o.z; t.tx = o.tx; t.ty = o.ty; } }
   S.tiles = S.tiles.filter(o => !others.includes(o));
   Object.assign(t, n); clampPan(t); afterTiles();
 }
@@ -426,19 +440,19 @@ function clampPan(t) {
   const tw = W() * t.w / COLS, th = H() * t.h / ROWS;
   let nw = el && el.naturalWidth, nh = el && el.naturalHeight;
   if (!nw) { t.tx = clamp(t.tx, -.5, .5); t.ty = clamp(t.ty, -.5, .5); return; }
-  const s = Math.max(tw / nw, th / nh) * t.z;
+  const s = (t.fit ? Math.min : Math.max)(tw / nw, th / nh) * t.z;
   const mx = Math.max(0, (nw * s - tw) / 2) / tw, my = Math.max(0, (nh * s - th) / 2) / th;
   t.tx = clamp(t.tx, -mx, mx); t.ty = clamp(t.ty, -my, my);
 }
 $('#cFull').onclick = () => {
   const cur = curTile() || S.tiles[0];
   const src = cur.img ? cur : (S.tiles.find(t => t.img) || cur);
-  S.tiles = [{ id: cur.id, c: 0, r: 0, w: COLS, h: ROWS, img: src.img, z: src.z, tx: 0, ty: 0 }];
+  S.tiles = [{ id: cur.id, c: 0, r: 0, w: COLS, h: ROWS, img: src.img, fit: src.fit, z: src.z, tx: 0, ty: 0 }];
   selTile = cur.id; afterTiles();
 };
 $('#cReset').onclick = () => {
   const old = S.tiles; S.tiles = defaultTiles();
-  old.forEach(o => { if (o.img) { const n = S.tiles.find(t => t.c === o.c && t.r === o.r); if (n) n.img = o.img; } });
+  old.forEach(o => { if (o.img) { const n = S.tiles.find(t => t.c === o.c && t.r === o.r); if (n) { n.img = o.img; n.fit = o.fit; } } });
   selTile = null; afterTiles();
 };
 $$('[data-g]').forEach(b => b.onclick = () => growTile(b.dataset.g));
@@ -461,10 +475,15 @@ function syncCollage() {
   });
   $$('[data-p]').forEach(b => { const d = b.dataset.p; b.disabled = !t || ((d === 'l' || d === 'r') ? t.w < 2 : t.h < 2); });
   $('#sIo').value = S.set.io * 100; $('#sDim').value = S.set.dim * 100; $('#sFeather').value = S.set.feather;
+  $('#cFit').disabled = !t || !t.img; $('#cFit').textContent = t && t.fit ? 'mode: whole image' : 'mode: fill slot';
+  $('#sBg').value = S.set.bg; $('#sClouds').checked = !!S.set.clouds;
 }
 $('#sIo').oninput = e => { S.set.io = e.target.value / 100; applySettings(); save(); };
 $('#sDim').oninput = e => { S.set.dim = e.target.value / 100; applySettings(); save(); };
 $('#sFeather').oninput = e => { S.set.feather = +e.target.value; applySettings(); save(); };
+$('#sBg').oninput = e => { S.set.bg = e.target.value; applySettings(); save(); };
+$('#sClouds').onchange = e => { S.set.clouds = e.target.checked; applySettings(); save(); };
+$('#cFit').onclick = () => { const t = curTile(); if (!t || !t.img) return; t.fit = !t.fit; t.tx = t.ty = 0; afterTiles(); };
 
 // tile tap / pan
 let tg = null;
@@ -531,7 +550,6 @@ const FONTS = [
   { n: 'Marker', css: '"Marker Felt","Chalkboard SE",cursive' },
   { n: 'Sans', css: '-apple-system,"SF Pro Text",system-ui,sans-serif' }
 ];
-const COLORS = ['#f3e9ff', '#ffffff', '#ffb6e6', '#c9a0ff', '#9fb4ff', '#8fe3d6', '#ffd9a0', '#b8a9c9', '#6d5a8a', '#1a0b2e'];
 const textsEl = $('#texts');
 const els = new Map();
 let selected = null, last = { moved: false };
@@ -544,7 +562,7 @@ function styleBlock(b) {
   t.style.fontSize = `calc(${b.size} * var(--u))`;
   t.style.color = b.color; t.style.textAlign = b.align;
   t.style.letterSpacing = (b.ls / 100) + 'em'; t.style.lineHeight = b.lh / 100; t.style.opacity = b.op;
-  t.style.setProperty('--gc', b.color);
+  t.style.setProperty('--gc', b.color); t.style.setProperty('--gg', b.gc || '#ffb6e6');
   el.classList.toggle('glow', !!b.glow);
 }
 function mkBlock(b) {
@@ -589,7 +607,7 @@ function mkBlock(b) {
   return el;
 }
 function addText(x, y, text = '') {
-  const b = { id: uid(), x: clamp(x, 0, .6), y: clamp(y, 0, .9), w: .7, text, font: 0, size: 22, color: '#f3e9ff', align: 'left', glow: false, ls: 6, lh: 140, op: .95 };
+  const b = { id: uid(), x: clamp(x, 0, .6), y: clamp(y, 0, .9), w: .7, text, font: 0, size: 22, color: '#f3e9ff', align: 'left', glow: false, gc: '#ffb6e6', ls: 6, lh: 140, op: .95 };
   S.texts.push(b); mkBlock(b); select(b); save(); return b;
 }
 function removeBlock(b) {
@@ -640,17 +658,13 @@ app.addEventListener('click', e => {
 });
 
 /* ----- text panel ----- */
-const fontChips = $('#fontChips'), sw = $('#swatches');
+const fontChips = $('#fontChips');
 FONTS.forEach((f, i) => {
   const c = document.createElement('button'); c.className = 'chip'; c.textContent = f.n; c.style.fontFamily = f.css; c.dataset.i = i;
   c.onclick = () => upd(b => b.font = i); fontChips.appendChild(c);
 });
-COLORS.forEach(col => {
-  const c = document.createElement('button'); c.className = 'sw-c'; c.style.background = col; c.dataset.c = col; c.setAttribute('aria-label', col);
-  c.onclick = () => upd(b => b.color = col); sw.appendChild(c);
-});
-const colIn = document.createElement('input'); colIn.type = 'color'; colIn.id = 'tColor'; sw.appendChild(colIn);
-colIn.oninput = () => upd(b => b.color = colIn.value);
+$('#tColor').oninput = e => upd(b => b.color = e.target.value);
+$('#tGc').oninput = e => upd(b => b.gc = e.target.value);
 function upd(fn) { const b = selected; if (!b) return; fn(b); styleBlock(b); syncText(); save(); }
 const bind = (id, f) => $('#' + id).addEventListener('input', e => upd(b => f(b, +e.target.value)));
 bind('tSize', (b, v) => b.size = v); bind('tLs', (b, v) => b.ls = v); bind('tLh', (b, v) => b.lh = v); bind('tOp', (b, v) => b.op = v / 100);
@@ -660,14 +674,14 @@ $('#tDel').onclick = () => { if (selected) removeBlock(selected); };
 function syncText() {
   const b = selected; if (!b) return;
   $$('.chip', fontChips).forEach(c => c.classList.toggle('on', +c.dataset.i === b.font));
-  $$('.sw-c', sw).forEach(c => c.classList.toggle('on', c.dataset.c === b.color));
   $$('[data-al]').forEach(x => x.classList.toggle('on', x.dataset.al === b.align));
   $('#tSize').value = b.size; $('#tSizeV').textContent = b.size;
   $('#tLs').value = b.ls; $('#tLsV').textContent = b.ls;
   $('#tLh').value = b.lh; $('#tLhV').textContent = b.lh;
   $('#tOp').value = Math.round(b.op * 100); $('#tOpV').textContent = Math.round(b.op * 100);
   $('#tGlow').checked = !!b.glow;
-  if (/^#[0-9a-f]{6}$/i.test(b.color)) colIn.value = b.color;
+  if (/^#[0-9a-f]{6}$/i.test(b.color)) $('#tColor').value = b.color;
+  $('#tGc').value = /^#[0-9a-f]{6}$/i.test(b.gc || '') ? b.gc : '#ffb6e6';
 }
 
 /* =================== kaomoji / symbols / kana =================== */
@@ -727,13 +741,15 @@ function insertText(s) {
 }
 
 /* =================== effects =================== */
-const fxPane = { stars: '#fStars', flow: '#fFlow', spark: '#fSpark', flare: '#fFlare' };
+const fxPane = { stars: '#fStars', flow: '#fFlow', spark: '#fSpark', flare: '#fFlare', rainbow: '#fRainbow', snow: '#fSnow', bunny: '#fBunny', silly: '#fSilly' };
 Object.entries(fxPane).forEach(([k, sel]) => $(sel).onchange = e => { S.set[k] = e.target.checked; applySettings(); save(); });
 $('#fAmt').oninput = e => { S.set.fxi = e.target.value / 100; save(); };
 function syncFx() { Object.entries(fxPane).forEach(([k, sel]) => $(sel).checked = !!S.set[k]); $('#fAmt').value = S.set.fxi * 100; }
 
 const cs = $('#stars'), cf = $('#fx'), sx = cs.getContext('2d'), fxx = cf.getContext('2d');
-let dpr = Math.min(2, devicePixelRatio || 1), CW = 0, CH = 0, stars = [], sparks = [], flares = [];
+let dpr = Math.min(2, devicePixelRatio || 1), CW = 0, CH = 0, stars = [], sparks = [], flares = [], fall = [];
+const SILLY = ['🍓', '🌸', '🐸', '🍄', '🎀', '🍡', '🦆', '🧁', '⭐', '🫧', '🐱', '🌈', '🍩', '🪩', '🐥', '🍒'];
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
 function sizeCanvas() {
   CW = W(); CH = H(); if (!CW) return;
   for (const c of [cs, cf]) { c.width = Math.round(CW * dpr); c.height = Math.round(CH * dpr); }
@@ -746,11 +762,18 @@ function star4(c, x, y, r) {
   c.beginPath(); c.moveTo(x, y - r); c.quadraticCurveTo(x, y, x + r, y); c.quadraticCurveTo(x, y, x, y + r);
   c.quadraticCurveTo(x, y, x - r, y); c.quadraticCurveTo(x, y, x, y - r); c.fill();
 }
+function spawnFall(kind) {
+  const x = Math.random() * CW;
+  const p = { kind, x0: x, x, y: -30, ph: Math.random() * 6.28, sw: 8 + Math.random() * 22 };
+  if (kind === 'snow') { p.r = 2 + Math.random() * 4.5; p.h = Math.random() * 360; p.vy = 25 + Math.random() * 45; }
+  else { p.size = (kind === 'bunny' ? 15 : 17) + Math.random() * 15; p.ch = kind === 'bunny' ? '🐰' : SILLY[Math.random() * SILLY.length | 0]; p.vy = 40 + Math.random() * 60; }
+  fall.push(p);
+}
 let lastF = 0, wasStars = true, wasFx = true;
 function frame(now) {
   requestAnimationFrame(frame);
   if (document.hidden || now - lastF < 33 || !CW) return;
-  const dt = Math.min(.1, (now - lastF) / 1000); lastF = now; const t = now / 1000, s = S.set;
+  const dt = Math.min(.1, (now - lastF) / 1000); lastF = now; const t = now / 1000, s = S.set, amt = s.fxi;
   // stars
   if (s.stars) {
     sx.clearRect(0, 0, CW, CH);
@@ -761,33 +784,68 @@ function frame(now) {
     }
     sx.globalAlpha = 1; wasStars = true;
   } else if (wasStars) { sx.clearRect(0, 0, CW, CH); wasStars = false; }
-  // sparkles + flares
-  if (s.spark || s.flare) {
-    fxx.clearRect(0, 0, CW, CH); wasFx = true;
-    if (s.flare) {
-      fxx.globalCompositeOperation = 'lighter';
-      for (const f of flares) {
-        f.x += f.vx * dt; f.y += f.vy * dt;
-        if (f.x < -f.r) f.x = CW + f.r; if (f.x > CW + f.r) f.x = -f.r; if (f.y < -f.r) f.y = CH + f.r; if (f.y > CH + f.r) f.y = -f.r;
-        const a = (.05 + .07 * (.5 + .5 * Math.sin(t * .4 + f.p))) * (.4 + s.fxi * 1.2), [r, g, b] = f.col;
-        const gr = fxx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
-        gr.addColorStop(0, `rgba(${r},${g},${b},${a})`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
-        fxx.fillStyle = gr; fxx.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
-      }
-      fxx.globalCompositeOperation = 'source-over';
+
+  const on = s.spark || s.flare || s.rainbow || s.snow || s.bunny || s.silly;
+  if (!on) { if (wasFx) { fxx.clearRect(0, 0, CW, CH); wasFx = false; sparks = []; fall = []; } return; }
+  fxx.clearRect(0, 0, CW, CH); wasFx = true;
+
+  // soft light flares + rainbow glare (additive light)
+  fxx.globalCompositeOperation = 'lighter';
+  if (s.flare) {
+    for (const f of flares) {
+      f.x += f.vx * dt; f.y += f.vy * dt;
+      if (f.x < -f.r) f.x = CW + f.r; if (f.x > CW + f.r) f.x = -f.r; if (f.y < -f.r) f.y = CH + f.r; if (f.y > CH + f.r) f.y = -f.r;
+      const a = (.05 + .07 * (.5 + .5 * Math.sin(t * .4 + f.p))) * (.4 + amt * 1.2), [r, g, b] = f.col;
+      const gr = fxx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+      gr.addColorStop(0, `rgba(${r},${g},${b},${a})`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      fxx.fillStyle = gr; fxx.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
     }
-    if (s.spark) {
-      const max = 5 + Math.round(20 * s.fxi);
-      if (sparks.length < max && Math.random() < .12) sparks.push({ x: Math.random() * CW, y: Math.random() * CH, age: 0, life: 1.4 + Math.random() * 1.8, r: 3 + Math.random() * 6, c: ['#ffffff', '#ffd6ff', '#e0b0ff'][Math.random() * 3 | 0] });
-      fxx.shadowBlur = 6;
-      sparks = sparks.filter(p => (p.age += dt) < p.life);
-      for (const p of sparks) {
-        const k = p.age / p.life; fxx.globalAlpha = Math.sin(k * Math.PI) * .9; fxx.fillStyle = p.c; fxx.shadowColor = p.c;
-        star4(fxx, p.x, p.y, p.r * (.5 + Math.sin(k * Math.PI) * .6));
-      }
-      fxx.shadowBlur = 0; fxx.globalAlpha = 1;
-    } else sparks = [];
-  } else if (wasFx) { fxx.clearRect(0, 0, CW, CH); wasFx = false; sparks = []; }
+  }
+  if (s.rainbow) {
+    // a wide diagonal rainbow band that sweeps across the screen and breathes
+    const bw = CW * 1.1, k = (t * .06) % 1.5 - .25, ax = -bw + k * (CW + bw * 2);
+    const a = (.12 + .30 * amt) * (.65 + .35 * Math.sin(t * 1.1));
+    const g = fxx.createLinearGradient(ax, 0, ax + bw, bw * .55);
+    const stops = [[0, 'rgba(255,60,60,0)'], [.14, `rgba(255,70,90,${a})`], [.28, `rgba(255,190,60,${a})`], [.42, `rgba(255,255,110,${a})`], [.56, `rgba(90,255,150,${a})`], [.7, `rgba(80,200,255,${a})`], [.84, `rgba(150,110,255,${a})`], [1, 'rgba(255,110,230,0)']];
+    stops.forEach(([o, c]) => g.addColorStop(o, c));
+    fxx.fillStyle = g; fxx.fillRect(0, 0, CW, CH);
+  }
+  fxx.globalCompositeOperation = 'source-over';
+
+  // falling things: snow, bunnies, silly emoji
+  const want = { snow: s.snow ? 25 + Math.round(90 * amt) : 0, bunny: s.bunny ? 5 + Math.round(24 * amt) : 0, silly: s.silly ? 5 + Math.round(24 * amt) : 0 };
+  const have = { snow: 0, bunny: 0, silly: 0 };
+  fall = fall.filter(p => want[p.kind] > 0 && p.y < CH + 40);
+  for (const p of fall) have[p.kind]++;
+  for (const k of ['snow', 'bunny', 'silly']) if (have[k] < want[k] && Math.random() < .4) spawnFall(k);
+  fxx.textAlign = 'center'; fxx.textBaseline = 'middle';
+  for (const p of fall) {
+    p.y += p.vy * dt; p.x = p.x0 + Math.sin(t * .9 + p.ph) * p.sw;
+    if (p.kind === 'snow') {
+      fxx.fillStyle = `hsla(${(p.h + t * 25) % 360},95%,78%,.92)`; fxx.shadowColor = fxx.fillStyle; fxx.shadowBlur = 6;
+      fxx.beginPath(); fxx.arc(p.x, p.y, p.r, 0, 6.283); fxx.fill(); fxx.shadowBlur = 0;
+    } else {
+      fxx.save(); fxx.translate(p.x, p.y); fxx.rotate(Math.sin(t * 1.3 + p.ph) * .45);
+      fxx.font = `${p.size}px ${EMOJI_FONT}`; fxx.fillText(p.ch, 0, 0); fxx.restore();
+    }
+  }
+
+  // sparkles: big, bright, mixed colours
+  if (s.spark) {
+    const max = 8 + Math.round(40 * amt);
+    if (sparks.length < max && Math.random() < .35) {
+      const rainbow = Math.random() < .55;
+      sparks.push({ x: Math.random() * CW, y: Math.random() * CH, age: 0, life: 1.2 + Math.random() * 1.8, r: (9 + Math.random() * 24) * (.6 + amt * .9), c: rainbow ? `hsl(${Math.random() * 360 | 0},100%,80%)` : ['#ffffff', '#ffd6ff', '#ffe9a8'][Math.random() * 3 | 0] });
+    }
+    fxx.shadowBlur = 16;
+    sparks = sparks.filter(p => (p.age += dt) < p.life);
+    for (const p of sparks) {
+      const k = p.age / p.life, e = Math.sin(k * Math.PI); fxx.globalAlpha = Math.min(1, e * 1.25); fxx.fillStyle = p.c; fxx.shadowColor = p.c;
+      star4(fxx, p.x, p.y, p.r * (.45 + e * .75));
+      fxx.globalAlpha = Math.min(1, e); star4(fxx, p.x, p.y, p.r * .35 * (.5 + e)); // bright core
+    }
+    fxx.shadowBlur = 0; fxx.globalAlpha = 1;
+  } else sparks = [];
 }
 
 /* =================== boot =================== */
