@@ -26,7 +26,7 @@ button{font:inherit;color:inherit;background:none;border:0;touch-action:manipula
 /* ---------- the screen ---------- */
 .app{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
   width:min(100vw,calc(100dvh*390/844));height:100dvh;overflow:hidden;border-radius:var(--rad);
-  background:var(--ink);isolation:isolate;--u:1px;--kb:0px;--io:.85;--dim:.15;--feather:14}
+  background:var(--ink);isolation:isolate;translate:0 var(--shift,0px);--u:1px;--kb:0px;--io:.85;--dim:.15;--feather:14}
 @media (max-width:500px){.app{left:0;top:0;transform:none;width:100%;height:100%;border-radius:0}}
 
 .nebula{position:absolute;inset:0;z-index:0;
@@ -330,7 +330,21 @@ function kb() {
   const v = window.visualViewport; if (!v) return;
   app.style.setProperty('--kb', Math.max(0, innerHeight - v.height - v.offsetTop) + 'px');
 }
-if (window.visualViewport) { visualViewport.addEventListener('resize', kb); visualViewport.addEventListener('scroll', kb); }
+// iOS can leave the page nudged up after the keyboard closes. Snap back to the true top.
+function isEditing() { const a = document.activeElement; return !!(a && a.classList && a.classList.contains('txt') && a.isContentEditable); }
+function fixViewport() {
+  if (isEditing()) { app.style.setProperty('--shift', '0px'); return; }
+  if (window.scrollY || window.pageYOffset) scrollTo(0, 0);
+  const off = window.visualViewport ? window.visualViewport.offsetTop : 0;
+  app.style.setProperty('--shift', off > 1 ? off + 'px' : '0px');
+}
+function settleViewport() { fixViewport(); [60, 250, 600, 1200].forEach(ms => setTimeout(fixViewport, ms)); }
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', () => { kb(); fixViewport(); });
+  visualViewport.addEventListener('scroll', () => { kb(); fixViewport(); });
+}
+['pageshow', 'focus', 'orientationchange', 'resize', 'scroll'].forEach(ev => addEventListener(ev, settleViewport));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) settleViewport(); });
 
 /* =================== settings =================== */
 function applySettings() {
@@ -601,7 +615,7 @@ function mkBlock(b) {
   t.addEventListener('input', () => { if (!t.textContent) t.innerHTML = ''; b.text = t.innerText; save(); });
   t.addEventListener('blur', () => {
     el.classList.remove('editing'); t.contentEditable = 'false'; dock.classList.remove('editing');
-    b.text = t.innerText; save(); scrollTo(0, 0);
+    b.text = t.innerText; save(); settleViewport();
     if (selected === b && !pane) openPane('text');
   });
   return el;
@@ -849,7 +863,7 @@ function frame(now) {
 }
 
 /* =================== boot =================== */
-setU(); kb(); applySettings(); sizeCanvas();
+setU(); kb(); applySettings(); sizeCanvas(); settleViewport();
 S.texts.forEach(mkBlock);
 renderGrid();
 requestAnimationFrame(frame);
